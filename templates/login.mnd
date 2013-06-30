@@ -1,0 +1,24 @@
+<h1>Login</h1>
+
+{{#error}}
+{{?if String|len > 0 }}
+<div class="error">{{String}}</div>
+{{/if}}
+{{/error}}
+<form action="" method="POST" id="login-user">
+    <div id="email-container" class="input">
+        <label for="Email">Email:</label>
+        <input type="text" name="Email" id="email" value="{{#user}}{{Email}}{{/user}}">
+    </div>
+    
+    <div id="password-container" class="input">
+        <label for="Password">Password:</label>
+        <input type="password" name="Password" id="password">
+    </div>
+    
+    <div class="submit">
+        <input type="submit" value="submit">
+    </div>
+</form>
+
+<p>Don't have a user yet?  <a href="/users/create">Create one</a>.</p>

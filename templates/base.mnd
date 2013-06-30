@@ -1,0 +1,20 @@
+<html>
+    <head>
+        <link rel="stylesheet" media="screen" href="/static/style.css">
+        <link href='http://fonts.googleapis.com/css?family=Lato:400,700' rel='stylesheet' type='text/css'>
+        <script src="/static/jquery.js"></script>
+        <script src="/static/prettify.js"></script>
+        <script type="text/javascript">
+            $(function() {
+                $("pre[lang]").each(function() {
+                    $(this).addClass("prettyprint").addClass("linenums");
+                });
+            });
+        </script>
+    </head>
+    <body onload="prettyPrint();">
+        <div id="content">
+        {{{content}}}
+        </div>
+    </body>
+</html>

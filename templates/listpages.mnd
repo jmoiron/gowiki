@@ -1,0 +1,7 @@
+<h1>Pages</h1>
+
+<ul>
+{{#pages}}
+    <li><a href="{{Url}}">{{Title}}</a> @ <tt>{{Url}}</tt> [<a href="/pages/edit{{Url}}">edit</a>]</li>
+{{/pages}}
+</ul>

@@ -1,0 +1,9 @@
+{{#user}}
+<h1>{{Username}}</h1>
+
+<li>Email: <a href="mailto:{{Email}}">{{Email}}</a></li>
+
+<h2>Owned Pages:</h2>
+<!-- TODO -->
+
+{{/user}}

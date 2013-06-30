@@ -1,0 +1,22 @@
+<h1>Create a User</h1>
+
+<form action="" method="POST" id="create-user">
+    <div id="email-container" class="input">
+        <label for="Email">Email:</label>
+        <input type="text" name="Email" id="email">
+    </div>
+    
+    <div id="password-container" class="input">
+        <label for="Password">Password:</label>
+        <input type="password" name="Password" id="password">
+    </div>
+    
+    <div id="username-container" class="input">
+        <label for="Username">Display name:</label>
+        <input type="text" name="Username" id="username">
+    </div>
+
+    <div class="submit">
+        <input type="submit" value="submit">
+    </div>
+</form>

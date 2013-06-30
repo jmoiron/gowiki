@@ -1,0 +1,14 @@
+<h1>Users</h1>
+
+{{?if users|len > 0 }}
+<ul>
+{{#users}}
+    <li><a href="/users/{{Id}}">{{Username}}</a> ({{Email}})</li>
+{{/users}}
+</ul>
+
+<p><a href="/users/create">Create a user</a> or <a href="/users/login">Log in</a>.</p>
+{{?else }}
+<p>There are no users yet.  Why not <a href="/users/create">Create one</a>?</p>
+
+{{/if }}

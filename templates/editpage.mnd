@@ -1,0 +1,21 @@
+{{#page}}
+<h1>Edit <tt>{{Url}}</tt></h1>
+
+<div class="error">{{error}}</div>
+
+<form action="" method="POST" id="edit-page">
+    <input type="hidden" name="Url" value="{{Url}}">
+
+    <div id="title-container" class="input">
+        <input type="text" name="Title" id="title" value="{{Title}}" placeholder="Title">
+    </div>
+
+    <div id="content-container" class="textarea">
+        <textarea name="Content" placeholder="Content">{{Content}}</textarea>
+    </div>
+
+    <div>
+        <input type="submit" value="submit">
+    </div>
+</form>
+{{/page}}

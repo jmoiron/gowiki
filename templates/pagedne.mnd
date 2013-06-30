@@ -1,0 +1,5 @@
+{{#page}}
+<h1>{{Url}}</h1>
+
+<p>This page does not exist yet!  <a href="/pages/edit{{Url}}">Create it</a>!</p>
+{{/page}}
