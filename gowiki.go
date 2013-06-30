@@ -102,7 +102,7 @@ func main() {
 	r.Get("/{url:.*}", http.HandlerFunc(wikipage))
 
 	http.Handle("/", handlers.LoggingHandler(os.Stdout, r))
-	port = environ("GOWIKI_PORT", "2222")
+	port := environ("GOWIKI_PORT", "2222")
 	fmt.Println("Listening on :" + port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
