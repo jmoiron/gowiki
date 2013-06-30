@@ -73,6 +73,16 @@ func MustParse(path string) *mandira.Template {
 	return t
 }
 
+// return an environment key or a fallback
+func environ(key, fallback string) string {
+	v := os.Getenv(key)
+	if len(v) == 0 {
+		return fallback
+	}
+	return v
+
+}
+
 func main() {
 	// TODO: user/delete && page/delete
 	r := pat.New()
@@ -92,10 +102,7 @@ func main() {
 	r.Get("/{url:.*}", http.HandlerFunc(wikipage))
 
 	http.Handle("/", handlers.LoggingHandler(os.Stdout, r))
-	port := os.Getenv("GOWIKI_PORT")
-	if len(port) == 0 {
-		port = "2222"
-	}
+	port = environ("GOWIKI_PORT", "2222")
 	fmt.Println("Listening on :" + port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
@@ -300,10 +307,7 @@ func (p *Page) Render() string {
 
 func init() {
 	var err error
-	path := os.Getenv("GOWIKI_PATH")
-	if len(path) == 0 {
-		path = "./wiki.sql"
-	}
+	path := environ("GOWIKI_PATH", "./wiki.sql")
 	db, err = sqlx.Connect("sqlite3", path)
 	if err != nil {
 		log.Fatal("Error: ", err)
