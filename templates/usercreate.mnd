@@ -1,9 +1,13 @@
 <h1>Create a User</h1>
 
+{{?if error}}
+<div class="error">{{error}}</div>
+{{/if}}
+
 <form action="" method="POST" id="create-user">
     <div id="email-container" class="input">
         <label for="Email">Email:</label>
-        <input type="text" name="Email" id="email">
+        <input type="text" name="Email" id="email" {{#user}}value="{{Email}}"{{/user}}>
     </div>
     
     <div id="password-container" class="input">
@@ -13,7 +17,7 @@
     
     <div id="username-container" class="input">
         <label for="Username">Display name:</label>
-        <input type="text" name="Username" id="username">
+        <input type="text" name="Username" id="username" {{#user}}value="{{Username}}"{{/user}}>
     </div>
 
     <div class="submit">

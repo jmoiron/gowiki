@@ -1,10 +1,9 @@
 <h1>Login</h1>
 
-{{#error}}
-{{?if String|len > 0 }}
-<div class="error">{{String}}</div>
+{{?if error }}
+<div class="error">{{error}}</div>
 {{/if}}
-{{/error}}
+
 <form action="" method="POST" id="login-user">
     <div id="email-container" class="input">
         <label for="Email">Email:</label>
@@ -21,4 +20,8 @@
     </div>
 </form>
 
+{{#config}}
+{{?if AllowSignups }}
 <p>Don't have a user yet?  <a href="/users/create">Create one</a>.</p>
+{{/if}}
+{{/config}}

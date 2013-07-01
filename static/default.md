@@ -4,6 +4,8 @@ Gowiki is a simple markdown wiki with the following features:
 * markdown syntax w/ github style codeblocks
 * distributable as a single binary which runs its own http server
 * customizable styles
+* users and online user signup
+* open or closed wikis, user page ownership
 * ... by default it looks like [my website](http://jmoiron.net)
 
 Gowiki does not:

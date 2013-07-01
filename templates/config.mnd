@@ -1,0 +1,49 @@
+<h1>Configuration</h1>
+
+{{#config}}
+
+{{?if not user }}
+<p>You must be <a href="/users/login">Logged in</a> to access the wiki configuration.
+    {{?if AllowSignups}}
+    You can <a href="/users/create">Sign up</a> for an account to access this page.
+    {{/if}}
+
+{{?else}}
+{{#user}}
+<p>Welcome, <a href="/users/{{Id}}">{{Username}}</a>.  Configure different aspects of the wiki.</p>
+
+
+{{?if Id == 1 }}
+<p>Since you are <a href="/users/{{Id}}">{{Username}}</a> and your user id is 1, you have special configuration access.</p>
+
+<div class="input">
+<label>Session Secret:</label><span class="secret">{{Secret}}</span>
+</div>
+{{/if}}
+
+<form action="" method="POST" id="config-form">
+    <div id="locked-container" class="checkbox">
+        <input type=checkbox name="AllowSignups" id="AllowSignups" {{?if AllowSignups}}checked="checked"{{/if}}>
+        <label for="AllowSignups">Allow Signups?</label>
+    </div>
+    
+    <div id="locked-container" class="checkbox">
+        <input type=checkbox name="AllowAnonEdits" id="AllowAnonEdits" {{?if AllowAnonEdits}}checked="checked"{{/if}}>
+        <label for="AllowAnonEdits">Allow Anonymous Edits?</label>
+    </div>
+
+    <div id="locked-container" class="checkbox">
+        <input type=checkbox name="AllowConfigure" id="AllowConfigure" {{?if AllowConfigure}}checked="checked"{{/if}}>
+        <label for="AllowConfigure">Allow Any User To Configure Wiki?</label>
+    </div>
+
+    <div>
+        <input type="submit" value="submit">
+    </div>
+
+</form>
+
+{{/user}}
+{{/if}}
+
+{{/config}}

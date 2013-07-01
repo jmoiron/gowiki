@@ -6,6 +6,20 @@ Writing it was an experiment in determining the cowpaths of small but non-trivia
 [gorilla](http://gorillatoolkit.com), [sqlx](http://github.com/jmoiron/sqlx), and
 [modl](http://github.com/jmoiron/modl).
 
+## Features
+
+* markdown syntax w/ github style codeblocks
+* distributable as a single binary which runs its own http server
+* customizable styles
+* users and online user signup
+* open or closed wikis, user page ownership
+* ... by default it looks like [my website](http://jmoiron.net)
+
+Gowiki does not:
+
+* keep track of page references or interlinking
+* require the use of capital-cased WikiWeb style PageNames
+
 ## Installing
 
 ```

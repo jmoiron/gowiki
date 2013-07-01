@@ -7,7 +7,14 @@
 {{/users}}
 </ul>
 
+{{#config}}
+{{?if AllowSignups}}
 <p><a href="/users/create">Create a user</a> or <a href="/users/login">Log in</a>.</p>
+{{?else }}
+<p>Signup currently disabled.  <a href="/users/login">Log in</a></p>
+{{/if}}
+{{/config}}
+
 {{?else }}
 <p>There are no users yet.  Why not <a href="/users/create">Create one</a>?</p>
 

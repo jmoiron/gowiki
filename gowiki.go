@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	//"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/pat"
 	"github.com/gorilla/schema"
@@ -98,6 +99,9 @@ func main() {
 	r.Get("/pages/edit{url:.+}", http.HandlerFunc(editPage))
 	r.Post("/pages/edit{url:.+}", http.HandlerFunc(editPage))
 	r.Get("/pages", http.HandlerFunc(listPages))
+	// config
+	r.Get("/config", http.HandlerFunc(configWiki))
+	r.Post("/config", http.HandlerFunc(configWiki))
 	// wiki site
 	r.Get("/{url:.*}", http.HandlerFunc(wikipage))
 
@@ -139,7 +143,10 @@ func listUsers(w http.ResponseWriter, req *http.Request) {
 	defaults(w, req)
 	users := []*User{}
 	db.Select(&users, "SELECT * FROM user")
-	c := t("user.mnd").Render(M{"users": users})
+	c := t("user.mnd").Render(M{
+		"users":  users,
+		"config": cfg,
+	})
 	s := t("base.mnd").Render(M{"content": c})
 	w.Write([]byte(s))
 }
@@ -149,11 +156,22 @@ func createUser(w http.ResponseWriter, req *http.Request) {
 	var err error
 	user := &User{}
 
+	if !cfg.AllowSignups {
+		http.Redirect(w, req, "/", 301)
+		return
+	}
+
 	if req.Method == "POST" {
 		req.ParseForm()
 		decoder.Decode(user, req.PostForm)
 		user.Password = sha1hash(user.Password)
-		err = dbm.Insert(user)
+		u := &User{}
+		err = db.Get(u, "SELECT * FROM user WHERE email=?", user.Email)
+		if err == nil {
+			err = errors.New("User with that email already exists.")
+		} else {
+			err = dbm.Insert(user)
+		}
 		if err == nil {
 			http.Redirect(w, req, "/users", 303)
 			return
@@ -161,8 +179,9 @@ func createUser(w http.ResponseWriter, req *http.Request) {
 	}
 
 	s := t("usercreate.mnd").RenderInLayout(t("base.mnd"), M{
-		"error": err,
-		"user":  user,
+		"error":  err,
+		"user":   user,
+		"config": cfg,
 	})
 	w.Write([]byte(s))
 }
@@ -182,7 +201,12 @@ func showUser(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, "/users", 301)
 		return
 	}
-	w.Write([]byte(t("usershow.mnd").RenderInLayout(t("base.mnd"), M{"user": user})))
+	pages := []*Page{}
+	db.Select(&pages, "SELECT * FROM page WHERE ownedby=?", user.Id)
+	w.Write([]byte(t("usershow.mnd").RenderInLayout(t("base.mnd"), M{
+		"user":  user,
+		"pages": pages,
+	})))
 }
 
 func sha1hash(password string) string {
@@ -212,10 +236,25 @@ func login(w http.ResponseWriter, req *http.Request) {
 	if err == sql.ErrNoRows {
 		err = errors.New("Email or Password incorrect.")
 	}
+
 	w.Write([]byte(t("login.mnd").RenderInLayout(t("base.mnd"), M{
-		"user":  user,
-		"error": err,
+		"user":   user,
+		"error":  err,
+		"config": cfg,
 	})))
+}
+
+func currentuser(req *http.Request) *User {
+	session, _ := cookies.Get(req, "gowiki-session")
+	if session.Values["authenticated"] != true {
+		return nil
+	}
+	u := &User{}
+	err := dbm.Get(u, session.Values["userid"])
+	if err != nil {
+		return nil
+	}
+	return u
 }
 
 func logout(w http.ResponseWriter, req *http.Request) {
@@ -232,14 +271,37 @@ func listPages(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte(t("listpages.mnd").RenderInLayout(t("base.mnd"), M{"pages": pages})))
 }
 
+func checkbox(req *http.Request, key string) bool {
+	if v, ok := req.PostForm[key]; ok && len(v) > 0 {
+		return true
+	}
+	return false
+}
+
 func editPage(w http.ResponseWriter, req *http.Request) {
 	var err error
+	canEdit := true
+	user := currentuser(req)
 	page := &Page{}
 	page.Url = req.URL.Query().Get(":url")
-	if req.Method == "POST" {
+	err = dbm.Get(page, page.Url)
+	if err == nil && page.Locked && (user == nil || int(page.OwnedBy.Int64) != user.Id) {
+		canEdit = false
+	}
+	if user == nil && !cfg.AllowAnonEdits {
+		canEdit = false
+		err = nil
+	}
+	if req.Method == "POST" && canEdit {
 		req.ParseForm()
-		err = dbm.Get(page, page.Url)
 		decoder.Decode(page, req.PostForm)
+		// gorilla doesn't really handle the boolean/checkbox here well
+		page.Locked = checkbox(req, "Locked")
+		if page.Locked {
+			page.OwnedBy.Int64 = int64(user.Id)
+		} else {
+			page.OwnedBy.Valid = false
+		}
 		page.Render()
 		if err == nil {
 			_, err = dbm.Update(page)
@@ -249,9 +311,47 @@ func editPage(w http.ResponseWriter, req *http.Request) {
 	} else {
 		err = dbm.Get(page, page.Url)
 	}
+	owner := User{}
+	if !canEdit && user != nil && page.OwnedBy.Int64 > 0 {
+		dbm.Get(&owner, page.OwnedBy)
+	}
+
+	if err == sql.ErrNoRows {
+		err = nil
+	}
+
 	w.Write([]byte(t("editpage.mnd").RenderInLayout(t("base.mnd"), M{
-		"page":  page,
-		"error": err,
+		"page":    page,
+		"error":   err,
+		"user":    user,
+		"owner":   owner,
+		"config":  cfg,
+		"canEdit": canEdit,
+	})))
+}
+
+func configWiki(w http.ResponseWriter, req *http.Request) {
+	//var err error
+	canEdit := true
+	user := currentuser(req)
+	if user == nil {
+		canEdit = false
+	}
+	if !cfg.AllowConfigure && canEdit && user.Id != 1 {
+		canEdit = false
+	}
+	if req.Method == "POST" && canEdit {
+		req.ParseForm()
+		cfg.AllowAnonEdits = checkbox(req, "AllowAnonEdits")
+		cfg.AllowSignups = checkbox(req, "AllowSignups")
+		cfg.AllowConfigure = checkbox(req, "AllowConfigure")
+		cfg.Save()
+	}
+
+	w.Write([]byte(t("config.mnd").RenderInLayout(t("base.mnd"), M{
+		"user":    user,
+		"config":  cfg,
+		"canEdit": canEdit,
 	})))
 }
 
@@ -287,6 +387,64 @@ type Config struct {
 	Value string
 }
 
+type Configuration struct {
+	Secret         string
+	AllowSignups   bool
+	AllowAnonEdits bool
+	AllowConfigure bool
+}
+
+var cfg *Configuration
+
+func InitializeConfig() {
+	c1 := Config{Key: "Secret", Value: GenKey(32)}
+	c2 := Config{Key: "AllowSignups", Value: "true"}
+	c3 := Config{Key: "AllowAnonEdits", Value: "true"}
+	c4 := Config{Key: "AllowConfigure", Value: "true"}
+	tx, _ := dbm.Begin()
+	tx.Insert(&c1, &c2, &c3, &c4)
+	tx.Commit()
+}
+
+func (c *Configuration) Reload() {
+	r := &Config{}
+	rows, err := db.Queryx("SELECT * FROM config")
+	if err != nil {
+		fmt.Println("Error loading configuration: ", err)
+		return
+	}
+	for rows.Next() {
+		rows.StructScan(r)
+		switch r.Key {
+		case "Secret":
+			c.Secret = r.Value
+		case "AllowSignups":
+			c.AllowSignups = r.Value == "true"
+		case "AllowAnonEdits":
+			c.AllowAnonEdits = r.Value == "true"
+		case "AllowConfigure":
+			c.AllowConfigure = r.Value == "true"
+		}
+	}
+
+}
+
+func (c *Configuration) Save() {
+	c1 := Config{Key: "Secret", Value: c.Secret}
+	c2 := Config{Key: "AllowSignups", Value: fmt.Sprint(c.AllowSignups)}
+	c3 := Config{Key: "AllowAnonEdits", Value: fmt.Sprint(c.AllowAnonEdits)}
+	c4 := Config{Key: "AllowConfigure", Value: fmt.Sprint(c.AllowConfigure)}
+	tx, _ := dbm.Begin()
+	tx.Update(&c1, &c2, &c3, &c4)
+	tx.Commit()
+}
+
+func LoadConfig() *Configuration {
+	cfg := &Configuration{}
+	cfg.Reload()
+	return cfg
+}
+
 // renders a page and sets its Rendered content
 func (p *Page) Render() string {
 	var flags int
@@ -307,7 +465,7 @@ func (p *Page) Render() string {
 
 func init() {
 	var err error
-	path := environ("GOWIKI_PATH", "./wiki.sql")
+	path := environ("GOWIKI_PATH", "./wiki.db")
 	db, err = sqlx.Connect("sqlite3", path)
 	if err != nil {
 		log.Fatal("Error: ", err)
@@ -348,15 +506,15 @@ func init() {
 		t = templates.MustGet
 	}
 
-	/* initialize cookie secret if needed and store it in the config table */
-	secret := &Config{}
-	err = dbm.Get(secret, "secret")
-	if err != nil {
-		secret = &Config{Key: "secret", Value: GenKey(32)}
-		dbm.Insert(secret)
+	// initialize configuration (including session secret) if needed
+	cfg = LoadConfig()
+	if len(cfg.Secret) == 0 {
+		InitializeConfig()
+		cfg.Reload()
 		fmt.Println("Auto-created new cookie secret.")
 	}
 
+	// initialize index page if it doesn't exist
 	index := &Page{}
 	err = dbm.Get(index, "/")
 	if err != nil {
@@ -368,5 +526,5 @@ func init() {
 		fmt.Println("Auto-created index.")
 	}
 
-	cookies = sessions.NewCookieStore([]byte(secret.Value))
+	cookies = sessions.NewCookieStore([]byte(cfg.Secret))
 }

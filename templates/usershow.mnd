@@ -5,5 +5,12 @@
 
 <h2>Owned Pages:</h2>
 <!-- TODO -->
+{{?if pages|len > 0 }}
+<ul>
+{{#pages}}
+    <li><a href="{{Url}}">{{Title}}</a> @ {{Url}}</li>
+{{/pages}}
+</ul>
+{{/if}}
 
 {{/user}}

@@ -1,7 +1,13 @@
 {{#page}}
 <h1>Edit <tt>{{Url}}</tt></h1>
 
-<div class="error">{{error}}</div>
+{{#config}}
+{{?if not user and not AllowAnonEdits }}
+<div class="note">Sorry, this wiki is closed to anonymous edits.</div>
+{{/if}}
+{{/config}}
+
+{{?if error}}<div class="error">{{error}}</div>{{/if}}
 
 <form action="" method="POST" id="edit-page">
     <input type="hidden" name="Url" value="{{Url}}">
@@ -13,9 +19,23 @@
     <div id="content-container" class="textarea">
         <textarea name="Content" placeholder="Content">{{Content}}</textarea>
     </div>
+    {{#user}}
+    {{?if Id }}
+    <div id="locked-container" class="right">
+        <label for="Locked">Locked to {{ Email }}?</label>
+        <input type=checkbox name="Locked" id="Locked" {{?if Locked}}checked="checked"{{/if}}>
+    </div>
+    {{/if}}
+    {{/user}}
 
+    {{?if user}}
+    {{?if canEdit }}
     <div>
         <input type="submit" value="submit">
     </div>
+    {{?else}}
+    <p>Sorry, this page is owned by {{#owner}}<a href="/users/{{Id}}">{{Username}}</a>, contact them at <a href="mailto:{{Email}}">{{Email}}{{/owner}}</a>.</p>
+    {{/if}}
+    {{/if}}
 </form>
 {{/page}}
