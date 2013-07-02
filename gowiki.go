@@ -536,17 +536,22 @@ func bootstrap() {
 			tx.Insert(file)
 		}
 		tx.Commit()
+		fmt.Println("Initialized updatable static files.")
 	}
 
 	// initialize the index page
-	index := &Page{
-		Content: _bundle["static/default.md"],
-		Title:   "Welcome to Gowiki",
-		Url:     "/",
+	index := &Page{}
+	err := db.Get(index, "SELECT * FROM page WHERE url=?", "/")
+	if err != nil {
+		index := &Page{
+			Content: _bundle["static/default.md"],
+			Title:   "Welcome to Gowiki",
+			Url:     "/",
+		}
+		index.Render()
+		dbm.Insert(index)
+		fmt.Println("Auto-created index.")
 	}
-	index.Render()
-	dbm.Insert(index)
-	fmt.Println("Auto-created index.")
 }
 
 func loadBundle() {
@@ -603,10 +608,7 @@ func init() {
 	loadBundle()
 	cfg = LoadConfig()
 
-	// initialize configuration (including session secret) if needed
-	if len(cfg.Secret) == 0 {
-		bootstrap()
-	}
+	bootstrap()
 
 	// update bundled data with copies from the database
 	updateBundle()

@@ -3,15 +3,17 @@ Gowiki is a simple markdown wiki with the following features:
 
 * markdown syntax w/ github style codeblocks
 * distributable as a single binary which runs its own http server
-* customizable styles
+* online customizable styles and page markup
 * users and online user signup
 * open or closed wikis, user page ownership
 * ... by default it looks like [my website](http://jmoiron.net)
 
 Gowiki does not:
 
+* keep a revision history
 * keep track of page references or interlinking
-* require the use of capital-cased WikiWeb style PageNames
+* attempt to prevent multiple simultaneous edits
+* auto-link WikiWeb style PageNames or require WikiCase urls
 
 The only reserved page names are:
 
