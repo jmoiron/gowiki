@@ -22,14 +22,14 @@ input[type=text], input[type=password] { width: 30em; border: 1px solid #888; pa
 .submit { margin-left: 200px; }
 
 #edit-page #title { font-size: 30px; width: 80%; font-weight: bold; }
-#edit-page textarea {
+#edit-file textarea, #edit-page textarea {
     border: 0;
     width: 100%;
     min-height: 30em;
     color: #404040;
     font-size: 20px;
 }
-#edit-page textarea, #edit-page input[type=text] { padding: 5px 10px; border: 1px solid #eee; border-radius: 3px; }
+#edit-file textarea, #edit-page textarea, #edit-page input[type=text] { padding: 5px 10px; border: 1px solid #eee; border-radius: 3px; }
 .right {
     text-align: right;
 }

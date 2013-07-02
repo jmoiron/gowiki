@@ -100,6 +100,9 @@ func main() {
 	r.Post("/pages/edit{url:.+}", http.HandlerFunc(editPage))
 	r.Get("/pages", http.HandlerFunc(listPages))
 	// config
+	r.Get("/config/files/{path:.+}", http.HandlerFunc(editFile))
+	r.Post("/config/files/{path:.+}", http.HandlerFunc(editFile))
+	r.Get("/config/files", http.HandlerFunc(listFiles))
 	r.Get("/config", http.HandlerFunc(configWiki))
 	r.Post("/config", http.HandlerFunc(configWiki))
 	// wiki site
@@ -355,8 +358,50 @@ func configWiki(w http.ResponseWriter, req *http.Request) {
 	})))
 }
 
+func listFiles(w http.ResponseWriter, req *http.Request) {
+	files := make([]*File, 0, 10)
+	db.Select(&files, "SELECT * FROM file")
+	w.Write([]byte(t("listfiles.mnd").RenderInLayout(t("base.mnd"), M{
+		"files": files,
+	})))
+}
+
+func editFile(w http.ResponseWriter, req *http.Request) {
+	var err error
+
+	canEdit := true
+	user := currentuser(req)
+	if user == nil {
+		canEdit = false
+	}
+	if !cfg.AllowConfigure && canEdit && user.Id != 1 {
+		canEdit = false
+	}
+
+	path := req.URL.Query().Get(":path")
+	file := &File{}
+	dbm.Get(file, path)
+	if req.Method == "POST" && canEdit {
+		req.ParseForm()
+		decoder.Decode(file, req.PostForm)
+		_, err = dbm.Update(file)
+		/* if that update went well, update the in-memory bundle to that content */
+		if err == nil {
+			_bundle[file.Path] = file.Content
+		}
+	}
+
+	w.Write([]byte(t("editfile.mnd").RenderInLayout(t("base.mnd"), M{
+		"file":    file,
+		"canEdit": canEdit,
+		"config":  cfg,
+		"error":   err,
+	})))
+
+}
+
 func bundleStatic(w http.ResponseWriter, req *http.Request) {
-	f, ok := s_files[strings.TrimLeft(req.URL.Path, "/")]
+	f, ok := _bundle[strings.TrimLeft(req.URL.Path, "/")]
 	if ok {
 		w.Write([]byte(f))
 	} else {
@@ -380,6 +425,11 @@ type Page struct {
 	Title    string
 	Locked   bool
 	OwnedBy  sql.NullInt64
+}
+
+type File struct {
+	Path    string
+	Content string
 }
 
 type Config struct {
@@ -463,6 +513,74 @@ func (p *Page) Render() string {
 	return p.Rendered
 }
 
+func bootstrap() {
+	// initialize the secret key, if necessary
+	if len(cfg.Secret) == 0 {
+		InitializeConfig()
+		cfg.Reload()
+		fmt.Println("Auto-created new cookie secret.")
+	}
+
+	// initialize the in-db templates and style
+	files := make([]*File, 0, 10)
+	db.Select(&files, "SELECT * FROM file")
+	if len(files) == 0 {
+		paths := []string{
+			"static/style.css",
+			"templates/page.mnd",
+			"templates/base.mnd",
+		}
+		tx, _ := dbm.Begin()
+		for _, path := range paths {
+			file := &File{Path: path, Content: _bundle[path]}
+			tx.Insert(file)
+		}
+		tx.Commit()
+	}
+
+	// initialize the index page
+	index := &Page{
+		Content: _bundle["static/default.md"],
+		Title:   "Welcome to Gowiki",
+		Url:     "/",
+	}
+	index.Render()
+	dbm.Insert(index)
+	fmt.Println("Auto-created index.")
+}
+
+func loadBundle() {
+	for k, v := range _bundle {
+		b, err := base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			_bundle[k] = string(b)
+		}
+	}
+}
+
+func updateBundle() {
+	files := make([]*File, 0, 10)
+	db.Select(&files, "SELECT * FROM file")
+	for _, f := range files {
+		_bundle[f.Path] = f.Content
+	}
+}
+
+func loadTemplatesFromBundle() {
+	templates = mandira.NewLoader("./templates/", false)
+	for path, content := range _bundle {
+		if mandira.IsTemplate(path) {
+			path = strings.TrimPrefix(path, "templates/")
+			templates.Add(path, MustParse(content))
+		}
+	}
+	templates.Preload = true
+	templates.Loaded = true
+	t = templates.MustGet
+}
+
 func init() {
 	var err error
 	path := environ("GOWIKI_PATH", "./wiki.db")
@@ -474,57 +592,36 @@ func init() {
 	dbm.AddTable(User{}, "user").SetKeys(true, "id")
 	dbm.AddTable(Page{}, "page").SetKeys(false, "url")
 	dbm.AddTable(Config{}, "config").SetKeys(false, "key")
+	dbm.AddTable(File{}, "file").SetKeys(false, "path")
 	err = dbm.CreateTablesIfNotExists()
 
 	if err != nil {
 		log.Fatal("Database not creatable: ", err)
 	}
+
+	// load bundled data
+	loadBundle()
+	cfg = LoadConfig()
+
+	// initialize configuration (including session secret) if needed
+	if len(cfg.Secret) == 0 {
+		bootstrap()
+	}
+
+	// update bundled data with copies from the database
+	updateBundle()
+	cookies = sessions.NewCookieStore([]byte(cfg.Secret))
+
 	// if we're developing, use /static/ and /templates/
 	if MODE == DEVELOP {
 		fmt.Println("Running in development mode without bundled resources.")
 		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 		templates = mandira.NewLoader("./templates/", false)
-		// TODO: load m_default
-		t = templates.MustGet
 	} else {
 		fmt.Println("Running in deployment mode with bundled resources.")
-		// decode base64 encoded static files
-		for k, v := range s_files {
-			v = strings.Trim(v, " \t\n\r")
-			b, err := base64.StdEncoding.DecodeString(v)
-			if err != nil {
-				fmt.Println(err)
-			} else {
-				s_files[k] = string(b)
-			}
-		}
 		http.Handle("/static/", http.HandlerFunc(bundleStatic))
-		templates = mandira.NewLoader("/tmp/doesnotexist", true)
-		for path, content := range t_files {
-			templates.Add(path, MustParse(content))
-		}
-		t = templates.MustGet
+		loadTemplatesFromBundle()
 	}
 
-	// initialize configuration (including session secret) if needed
-	cfg = LoadConfig()
-	if len(cfg.Secret) == 0 {
-		InitializeConfig()
-		cfg.Reload()
-		fmt.Println("Auto-created new cookie secret.")
-	}
-
-	// initialize index page if it doesn't exist
-	index := &Page{}
-	err = dbm.Get(index, "/")
-	if err != nil {
-		index.Content = m_default
-		index.Render()
-		index.Title = "Welcome to Gowiki"
-		index.Url = "/"
-		dbm.Insert(index)
-		fmt.Println("Auto-created index.")
-	}
-
-	cookies = sessions.NewCookieStore([]byte(cfg.Secret))
+	t = templates.MustGet
 }

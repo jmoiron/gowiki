@@ -12,6 +12,7 @@
 {{#user}}
 <p>Welcome, <a href="/users/{{Id}}">{{Username}}</a>.  Configure different aspects of the wiki.</p>
 
+<p>Check out the <a href="/config/files">List of files</a> to change the stylesheet and add to the templates used to render the system.</p>
 
 {{?if Id == 1 }}
 <p>Since you are <a href="/users/{{Id}}">{{Username}}</a> and your user id is 1, you have special configuration access.</p>

@@ -1,0 +1,22 @@
+<h1>Files</h1>
+
+<p>These files can change the wiki is displayed at a low level.  The <tt>base.mnd</tt> file will allow you to add code to every page in the wiki, while the <tt>page.mnd</tt> file controls the rendering of all wiki page content.</p>
+
+<ul>
+{{#files}}
+    <li><a href="/config/files/{{Path}}">{{Path}}</a></li>
+{{/files}}
+</ul>
+
+<p>The template files are written in a simple template language called <a href="http://jmoiron.github.io/mandira">Mandira</a>.  It should be familiar to people who have used <a href="http://mustache.github.io/">Mustache</a> or <a href="https://docs.djangoproject.com/en/dev/ref/templates/">Django templates</a>.</p>
+
+<p>You can also <a href="/config/files/create">Create a file</a> from here and then link it from the <tt>&lt;head&gt;</tt> in <tt>base.mnd</tt> to extend the functionality of the wiki.</p>
+
+<p>Finally, you can <b>export your wiki</b> in a variety of formats:</p>
+
+<ul>
+    <li><a href="/config/export/sqlite">Entire wiki sqlite db</a></li>
+    <li><a href="/config/export/html">Wiki-only flat HTML</a></li>
+    <li><a href="/config/export/plain">Markdown wiki pages</a></li>
+</ul>
+

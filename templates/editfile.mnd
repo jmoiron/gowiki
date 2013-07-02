@@ -1,0 +1,23 @@
+{{#file}}
+<h1>Edit <tt>{{Path}}</tt></h1>
+
+{{#config}}
+{{?if user and not AllowConfigure }}
+<div class="note">Sorry, this wiki can only be configured by the superuser.</div>
+{{/if}}
+{{/config}}
+
+{{?if error}}<div class="error">{{error}}</div>{{/if}}
+
+<form action="" method="POST" id="edit-file">
+    <div id="content-container" class="textarea">
+        <textarea name="Content" placeholder="Content">{{Content}}</textarea>
+    </div>
+
+    {{?if canEdit }}
+    <div>
+        <input type="submit" value="submit">
+    </div>
+    {{/if}}
+</form>
+{{/file}}
