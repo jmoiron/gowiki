@@ -302,6 +302,7 @@ func editPage(w http.ResponseWriter, req *http.Request) {
 		page.Locked = checkbox(req, "Locked")
 		if page.Locked {
 			page.OwnedBy.Int64 = int64(user.Id)
+			page.OwnedBy.Valid = true
 		} else {
 			page.OwnedBy.Valid = false
 		}
