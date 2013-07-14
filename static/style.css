@@ -13,7 +13,7 @@ a { color: #00f; }
 a:visited { color: #808; }
 a:hover { color: #00a; }
 abbr { border-bottom: 1px dotted #aaa; }
-#content { width: 800px; margin: 2em auto; }
+#content { width: 800px; margin: 2em auto; position: relative; }
 pre { font-family: "Consolas", "Monaco", monospace; }
 
 .input label { width: 200px; text-align: right; display: inline-block; }
@@ -98,3 +98,40 @@ ol.linenums li {
   line-height: 18px;
   text-shadow: 0 1px 0 #fff;
 }
+#page-info-toggle-container {
+    text-align: right;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    z-index: 100;
+}
+#page-info-toggle {
+    font-size: 14px;
+}
+#page-info {
+    position: relative;
+    overflow: hidden;
+    display: none;
+    font-size: 16px;
+    border-radius: 8px;
+    padding: 0 10px;
+    background-color: #f8f8f8;
+}
+
+.fromlinks, .tolinks {
+    width: 50%;
+    margin: 0;
+    padding: 0;
+}
+.fromlinks {
+    float: left;
+}
+.tolinks {
+    float: right;
+}
+
+#page-info h4 {
+    font-size: 18px;
+    color: #666;
+}
+

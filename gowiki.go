@@ -141,7 +141,17 @@ func wikipage(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte(t("pagedne.mnd").RenderInLayout(t("base.mnd"), M{"page": page})))
 		return
 	}
-	w.Write([]byte(t("page.mnd").RenderInLayout(t("base.mnd"), M{"page": page})))
+	fromlinks := make([]Crosslink, 0, 10)
+	tolinks := make([]Crosslink, 0, 10)
+	db.Select(&fromlinks, "SELECT * FROM crosslink WHERE `from`=?", page.Url)
+	db.Select(&tolinks, "SELECT * FROM crosslink WHERE `to`=?", page.Url)
+	w.Write([]byte(t("page.mnd").RenderInLayout(t("base.mnd"), M{
+		"page": page,
+		"PageInfo": M{
+			"from": fromlinks,
+			"to":   tolinks,
+		},
+	})))
 }
 
 func listUsers(w http.ResponseWriter, req *http.Request) {

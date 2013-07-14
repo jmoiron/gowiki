@@ -4,36 +4,33 @@
         <link href='http://fonts.googleapis.com/css?family=Lato:400,700' rel='stylesheet' type='text/css'>
         <script src="/static/jquery.js"></script>
         <script src="/static/prettify.js"></script>
-        <script type="text/javascript">
-            /* add prettyprint + linenums to codeblocks */
-            $(function() {
-                $("pre[lang]").each(function() {
-                    $(this).addClass("prettyprint").addClass("linenums");
-                });
-            });
-            /* insert spaces instead of tabs in textareas */
-            $(document).delegate('textarea', 'keydown', function(e) {
-                var keyCode = e.keyCode || e.which;
-
-                if (keyCode == 9) {
-                    e.preventDefault();
-                    var start = $(this).get(0).selectionStart;
-                    var end = $(this).get(0).selectionEnd;
-
-                    // set textarea value to: text before caret + tab + text after caret
-                    $(this).val($(this).val().substring(0, start)
-                                + "    "
-                                + $(this).val().substring(end));
-
-                    // put caret at right position again
-                    $(this).get(0).selectionStart =
-                    $(this).get(0).selectionEnd = start + 4;
-                }
-            });
-        </script>
+        <script src="/static/wiki.js"></script>
     </head>
     <body onload="prettyPrint();">
         <div id="content">
+        {{?if PageInfo }}
+            <div id="page-info-toggle-container"><a id="page-info-toggle" href="#">page info</a></div>
+            <div id="page-info">
+                {{#PageInfo}}
+                    <div class="fromlinks">
+                        <h4>Pages this page links to:</h4>
+                        <ul>
+                        {{#from}}
+                            <li><a href="{{To}}">{{To}}</a></li>
+                        {{/from}}
+                        </ul>
+                    </div>
+                    <div class="tolinks">
+                        <h4>Pages linking to this page:</h4>
+                        <ul>
+                        {{#to}}
+                            <li><a href="{{From}}">{{From}}</a></li>
+                        {{/to}}
+                        </ul>
+                    </div>
+                {{/PageInfo}}
+            </div>
+        {{/if}}
         {{{content}}}
         </div>
     </body>
