@@ -110,19 +110,19 @@ func main() {
 	// wiki site
 	r.Get("/{url:.*}", http.HandlerFunc(wikipage))
 
-	http.Handle("/", handlers.LoggingHandler(os.Stdout, r))
+	handler := handlers.LoggingHandler(os.Stdout, r)
+	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		now := time.Now().UTC()
+		ts := now.Format(time.RFC1123)
+		ts = strings.Replace(ts, "UTC", "GMT", 1)
+		w.Header().Set("Server", "gowiki")
+		w.Header().Set("Date", ts)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		handler.ServeHTTP(w, req)
+	}))
 	port := environ("GOWIKI_PORT", "2222")
 	fmt.Println("Listening on :" + port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
-}
-
-func defaults(w http.ResponseWriter, req *http.Request) {
-	now := time.Now().UTC()
-	ts := now.Format(time.RFC1123)
-	ts = strings.Replace(ts, "UTC", "GMT", 1)
-	w.Header().Set("Server", "gowiki")
-	w.Header().Set("Date", ts)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 }
 
 func abort(w http.ResponseWriter, status int, body []byte) {
@@ -132,7 +132,6 @@ func abort(w http.ResponseWriter, status int, body []byte) {
 
 // Handles all non-sepcial wiki pages.
 func wikipage(w http.ResponseWriter, req *http.Request) {
-	defaults(w, req)
 	var err error
 	page := Page{}
 	page.Url = "/" + req.URL.Query().Get(":url")
@@ -155,7 +154,6 @@ func wikipage(w http.ResponseWriter, req *http.Request) {
 }
 
 func listUsers(w http.ResponseWriter, req *http.Request) {
-	defaults(w, req)
 	users := []*User{}
 	db.Select(&users, "SELECT * FROM user")
 	c := t("user.mnd").Render(M{
@@ -167,7 +165,6 @@ func listUsers(w http.ResponseWriter, req *http.Request) {
 }
 
 func createUser(w http.ResponseWriter, req *http.Request) {
-	defaults(w, req)
 	var err error
 	user := &User{}
 
