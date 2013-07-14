@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/sha1"
 	"database/sql"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"regexp"
 	//"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/pat"
@@ -308,9 +310,13 @@ func editPage(w http.ResponseWriter, req *http.Request) {
 		}
 		page.Render()
 		if err == nil {
+			page.UpdateCrosslinks()
 			_, err = dbm.Update(page)
 		} else {
 			err = dbm.Insert(page)
+			if err != nil {
+				page.UpdateCrosslinks()
+			}
 		}
 	} else {
 		err = dbm.Get(page, page.Url)
@@ -426,6 +432,7 @@ type Page struct {
 	Title    string
 	Locked   bool
 	OwnedBy  sql.NullInt64
+	Links    []string `db:"-"`
 }
 
 type File struct {
@@ -443,6 +450,11 @@ type Configuration struct {
 	AllowSignups   bool
 	AllowAnonEdits bool
 	AllowConfigure bool
+}
+
+type Crosslink struct {
+	From string
+	To   string
 }
 
 var cfg *Configuration
@@ -511,7 +523,56 @@ func (p *Page) Render() string {
 	//flags |= blackfriday.HTML_SAFELINK
 	renderer := blackfriday.HtmlRenderer(flags, "", "")
 	p.Rendered = string(blackfriday.Markdown([]byte(p.Content), renderer, extensions))
+	p.Rendered, p.Links = MediaWikiParse(p.Rendered)
 	return p.Rendered
+}
+
+func (p *Page) UpdateCrosslinks() {
+	tx := db.MustBegin()
+	tx.Execl("DELETE FROM crosslink WHERE `from`=?", p.Url)
+	for _, to := range p.Links {
+		tx.Execl("INSERT INTO crosslink (`from`, `to`) VALUES (?, ?)", p.Url, to)
+	}
+	tx.Commit()
+}
+
+// Parse out media wiki links, returning the resultant rendered string
+// and a slice of page links
+func MediaWikiParse(s string) (string, []string) {
+	b := []byte(s)
+	pat := regexp.MustCompile(`\[\[(?P<link>[^|\]]+)(?:\|(?P<title>[^\]]+))?\]\]`)
+	ret := bytes.NewBuffer(make([]byte, 0, len(s)+250))
+	links := make([]string, 0, 5)
+	start := 0
+	for _, r := range pat.FindAllSubmatchIndex(b, -1) {
+		var url, title []byte
+		begin, end, url1, url2, title1, title2 := r[0], r[1], r[2], r[3], r[4], r[5]
+		// allow to escape these in the mediawiki way with ![[foobar]]
+		if begin > 0 && b[begin-1] == '!' {
+			continue
+		}
+		if url1 > 0 {
+			url = b[url1:url2]
+		}
+		if title1 > 0 {
+			title = b[title1:title2]
+		} else {
+			title = url
+		}
+		if begin > start {
+			ret.Write(b[start:begin])
+		}
+
+		ret.Write([]byte(`<a href="/`))
+		ret.Write(url)
+		ret.Write([]byte(`">`))
+		ret.Write(title)
+		ret.Write([]byte(`</a>`))
+		links = append(links, "/"+string(url))
+		start = end
+	}
+	ret.Write(b[start:])
+	return ret.String(), links
 }
 
 func bootstrap() {
@@ -599,6 +660,7 @@ func init() {
 	dbm.AddTable(Page{}, "page").SetKeys(false, "url")
 	dbm.AddTable(Config{}, "config").SetKeys(false, "key")
 	dbm.AddTable(File{}, "file").SetKeys(false, "path")
+	dbm.AddTable(Crosslink{}, "crosslink").SetKeys(false, "from", "to")
 	err = dbm.CreateTablesIfNotExists()
 
 	if err != nil {
