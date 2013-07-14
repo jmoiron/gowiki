@@ -20,7 +20,7 @@ func TestMediawiki(t *testing.T) {
 		`<a href="/link1">link1</a><a href="/link2">link2</a>`,
 		`some stuff <a href="/link1">link1</a> and more <a href="/link with spaces">link with spaces</a>`,
 		`<a href="/link">with title</a>`,
-		`here is a <a href="/regular link">regular link</a> and a ![[escaped one]]`,
+		`here is a <a href="/regular link">regular link</a> and a [[escaped one]]`,
 	}
 	link_results := [][]string{
 		{},

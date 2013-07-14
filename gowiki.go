@@ -549,6 +549,9 @@ func MediaWikiParse(s string) (string, []string) {
 		begin, end, url1, url2, title1, title2 := r[0], r[1], r[2], r[3], r[4], r[5]
 		// allow to escape these in the mediawiki way with ![[foobar]]
 		if begin > 0 && b[begin-1] == '!' {
+			ret.Write(b[start : begin-1])
+			ret.Write(b[begin:end])
+			start = end
 			continue
 		}
 		if url1 > 0 {
