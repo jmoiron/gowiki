@@ -3,7 +3,7 @@
 Gowiki is a single-file single-executable wiki which runs its own webserver.
 
 Writing it was an experiment in determining the cowpaths of small but non-trivial web application development using
-[gorilla](http://gorillatoolkit.com), [sqlx](http://github.com/jmoiron/sqlx), and
+[gorilla](http://gorillatoolkit.org), [sqlx](http://github.com/jmoiron/sqlx), and
 [modl](http://github.com/jmoiron/modl).
 
 ## Features
