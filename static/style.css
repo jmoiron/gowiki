@@ -1,10 +1,10 @@
 
 body {
-    font-family: "Helvetica Neue", sans-serif;
+    font-family: sans-serif;
     padding: 0;
     margin: 0;
     color: #404040;
-    font-size: 20px;
+    font-size: 18px;
 }
 
 h1,h2,h3,h4,h5,h6 { color: #222; font-weight: bold; }
@@ -14,7 +14,10 @@ a:visited { color: #808; }
 a:hover { color: #00a; }
 abbr { border-bottom: 1px dotted #aaa; }
 #content { width: 800px; margin: 2em auto; position: relative; }
-pre { font-family: "Consolas", "Monaco", monospace; }
+pre { border: 1px dashed #eee; font-family: "Consolas", "Monaco", monospace; background-color: #fbfbfb; padding: 2px 5px; color: #000; overflow: auto; }
+code { font-size: 14px; font-weight: bold; color: #000; background-color: #fbfbfb; display: inline-block; }
+
+pre code { font-weight: normal; }
 
 .input label { width: 200px; text-align: right; display: inline-block; }
 input[type=text], input[type=password] { width: 30em; border: 1px solid #888; padding: 3px; }

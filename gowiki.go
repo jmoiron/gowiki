@@ -10,6 +10,14 @@ import (
 	"fmt"
 	"regexp"
 	//"github.com/davecgh/go-spew/spew"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/pat"
 	"github.com/gorilla/schema"
@@ -19,13 +27,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/russross/blackfriday"
-	"io"
-	"log"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -423,6 +424,15 @@ func bundleStatic(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// add back execl because it's been removed from sqlx for a long time
+func execl(db sqlx.Execer, q string, args ...interface{}) sql.Result {
+	res, err := db.Exec(q, args...)
+	if err != nil {
+		log.Printf("Error executing %s %#v: %s", q, args, err)
+	}
+	return res
+}
+
 // db
 
 type User struct {
@@ -526,7 +536,6 @@ func (p *Page) Render() string {
 	extensions |= blackfriday.EXTENSION_STRIKETHROUGH
 	extensions |= blackfriday.EXTENSION_SPACE_HEADERS
 	extensions |= blackfriday.EXTENSION_HARD_LINE_BREAK
-	flags |= blackfriday.HTML_GITHUB_BLOCKCODE
 	//flags |= blackfriday.HTML_SAFELINK
 	renderer := blackfriday.HtmlRenderer(flags, "", "")
 	p.Rendered = string(blackfriday.Markdown([]byte(p.Content), renderer, extensions))
@@ -536,9 +545,9 @@ func (p *Page) Render() string {
 
 func (p *Page) UpdateCrosslinks() {
 	tx := db.MustBegin()
-	tx.Execl("DELETE FROM crosslink WHERE `from`=?", p.Url)
+	execl(tx, "DELETE FROM crosslink WHERE `from`=?", p.Url)
 	for _, to := range p.Links {
-		tx.Execl("INSERT INTO crosslink (`from`, `to`) VALUES (?, ?)", p.Url, to)
+		execl(tx, "INSERT INTO crosslink (`from`, `to`) VALUES (?, ?)", p.Url, to)
 	}
 	tx.Commit()
 }
@@ -573,11 +582,11 @@ func MediaWikiParse(s string) (string, []string) {
 			ret.Write(b[start:begin])
 		}
 
-		ret.Write([]byte(`<a href="/`))
+		ret.WriteString(`<a href="/`)
 		ret.Write(url)
-		ret.Write([]byte(`">`))
+		ret.WriteString(`">`)
 		ret.Write(title)
-		ret.Write([]byte(`</a>`))
+		ret.WriteString(`</a>`)
 		links = append(links, "/"+string(url))
 		start = end
 	}
@@ -665,7 +674,7 @@ func init() {
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
-	dbm = modl.NewDbMap(&db.DB, modl.SqliteDialect{})
+	dbm = modl.NewDbMap(db.DB, modl.SqliteDialect{})
 	dbm.AddTable(User{}, "user").SetKeys(true, "id")
 	dbm.AddTable(Page{}, "page").SetKeys(false, "url")
 	dbm.AddTable(Config{}, "config").SetKeys(false, "key")
@@ -687,8 +696,8 @@ func init() {
 	updateBundle()
 	cookies = sessions.NewCookieStore([]byte(cfg.Secret))
 
-	// if we're developing, use /static/ and /templates/
-	if MODE == DEVELOP {
+	if len(environ("GOWIKI_DEVELOP", "")) > 0 {
+		// if we're developing, use /static/ and /templates/
 		fmt.Println("Running in development mode without bundled resources.")
 		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 		templates = mandira.NewLoader("./templates/", false)
