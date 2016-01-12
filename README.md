@@ -64,7 +64,6 @@ sqlite>
 
 ## Development
 
-Gowiki can run in `DEVELOP` mode by switching a flag in the source.  This will make it load static resources like
-javascript, css, and templates off the filesystem.  To run in `DEPLOY` mode again, run `bundle.sh` to re-bundle the
-resource changes and then build with `go build`.
+Run Gowiki in development mode by setting the `GOWIKI_DEVELOP` environ var to nonempty.  This will load css, templates,
+etc off the filesystem directly instead of using the resource bundling.
 
