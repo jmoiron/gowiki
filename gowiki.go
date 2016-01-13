@@ -26,7 +26,7 @@ import (
 	"github.com/jmoiron/modl"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/russross/blackfriday"
+	"github.com/shurcooL/github_flavored_markdown"
 )
 
 const (
@@ -527,18 +527,8 @@ func LoadConfig() *Configuration {
 
 // renders a page and sets its Rendered content
 func (p *Page) Render() string {
-	var flags int
-	var extensions int
-	extensions |= blackfriday.EXTENSION_NO_INTRA_EMPHASIS
-	extensions |= blackfriday.EXTENSION_TABLES
-	extensions |= blackfriday.EXTENSION_FENCED_CODE
-	extensions |= blackfriday.EXTENSION_AUTOLINK
-	extensions |= blackfriday.EXTENSION_STRIKETHROUGH
-	extensions |= blackfriday.EXTENSION_SPACE_HEADERS
-	extensions |= blackfriday.EXTENSION_HARD_LINE_BREAK
-	//flags |= blackfriday.HTML_SAFELINK
-	renderer := blackfriday.HtmlRenderer(flags, "", "")
-	p.Rendered = string(blackfriday.Markdown([]byte(p.Content), renderer, extensions))
+	b := github_flavored_markdown.Markdown([]byte(p.Content))
+	p.Rendered = string(b)
 	p.Rendered, p.Links = MediaWikiParse(p.Rendered)
 	return p.Rendered
 }

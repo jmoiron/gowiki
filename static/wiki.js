@@ -1,7 +1,16 @@
 /* add prettyprint + linenums to codeblocks */
 $(function() {
+    // old-style pre[lang] prettyprinter from outdated blackfriday
     $("pre[lang]").each(function() {
-        $(this).addClass("prettyprint").addClass("linenums");
+        $(this).addClass("prettyprint");
+    });
+    // converts the output from shurcooL ghm to code blocks
+    $("div.highlight").replaceWith(function() {
+        var classes = $(this).attr("class");
+        return $(this)
+            .contents()
+            .attr({class: classes})
+            .addClass("prettyprint");
     });
 });
 
