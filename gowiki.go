@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"errors"
+	"flag"
 	"fmt"
 	"regexp"
 	//"github.com/davecgh/go-spew/spew"
@@ -87,7 +88,63 @@ func environ(key, fallback string) string {
 
 }
 
+var opts struct {
+	debug      bool
+	delstatic  bool
+	loadstatic bool
+}
+
 func main() {
+	flag.BoolVar(&opts.debug, "debug", len(os.Getenv("GOWIKI_DEVELOP")) > 0, "run with debug mode")
+	flag.BoolVar(&opts.delstatic, "del-static", false, "delete db-cached static files")
+	flag.BoolVar(&opts.loadstatic, "load-static", false, "reload db-cached static files")
+	flag.Parse()
+
+	if opts.debug && opts.delstatic {
+		fmt.Printf("Error: cannot specify -debug and -del-static")
+		return
+	}
+
+	if opts.delstatic {
+		var files []File
+		err := db.Select(&files, "SELECT * FROM file;")
+		if err != nil {
+			fmt.Printf("Error reading files from db: %s\n", err)
+		}
+		if err == nil && len(files) > 0 {
+			fmt.Printf("Deleting %d cached static files:\n", len(files))
+			for _, f := range files {
+				fmt.Printf(" > %s\n", f.Path)
+			}
+		}
+		db.MustExec("DELETE FROM file;")
+		return
+	}
+
+	if opts.loadstatic {
+		bootstrap()
+		return
+	}
+
+	bootstrap()
+	// update bundled data with copies from the database
+	updateBundle()
+
+	cookies = sessions.NewCookieStore([]byte(cfg.Secret))
+
+	if opts.debug {
+		// if we're developing, use /static/ and /templates/
+		fmt.Println("Running in development mode without bundled resources.")
+		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
+		templates = mandira.NewLoader("./templates/", false)
+	} else {
+		fmt.Println("Running in deployment mode with bundled resources.")
+		http.Handle("/static/", http.HandlerFunc(bundleStatic))
+		loadTemplatesFromBundle()
+	}
+
+	t = templates.MustGet
+
 	// TODO: user/delete && page/delete
 	r := pat.New()
 	// user management
@@ -680,22 +737,4 @@ func init() {
 	loadBundle()
 	cfg = LoadConfig()
 
-	bootstrap()
-
-	// update bundled data with copies from the database
-	updateBundle()
-	cookies = sessions.NewCookieStore([]byte(cfg.Secret))
-
-	if len(environ("GOWIKI_DEVELOP", "")) > 0 {
-		// if we're developing, use /static/ and /templates/
-		fmt.Println("Running in development mode without bundled resources.")
-		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
-		templates = mandira.NewLoader("./templates/", false)
-	} else {
-		fmt.Println("Running in deployment mode with bundled resources.")
-		http.Handle("/static/", http.HandlerFunc(bundleStatic))
-		loadTemplatesFromBundle()
-	}
-
-	t = templates.MustGet
 }

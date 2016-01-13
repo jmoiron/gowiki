@@ -64,6 +64,13 @@ sqlite>
 
 ## Development
 
-Run Gowiki in development mode by setting the `GOWIKI_DEVELOP` environ var to nonempty.  This will load css, templates,
-etc off the filesystem directly instead of using the resource bundling.
+```sh
+$ ./gowiki -h
+Usage of ./gowiki:
+  -debug=false: run with debug mode
+  -del-static=false: delete db-cached static files
+  -load-static=false: reload db-cached static files
+```
+
+If no options are chosen, static files are loaded as necessary and the wiki is run in deploy mode.
 
