@@ -24,13 +24,14 @@ input[type=text], input[type=password] { width: 30em; border: 1px solid #888; pa
 .input { margin-bottom: 5px; }
 .submit { margin-left: 200px; }
 
-#edit-page #title { font-size: 30px; width: 80%; font-weight: bold; }
+#edit-page #title { font-size: 30px; width: 80%; font-weight: bold; background-color: #f7f7f9; }
 #edit-file textarea, #edit-page textarea {
     border: 0;
     width: 100%;
-    min-height: 30em;
-    color: #404040;
-    font-size: 20px;
+    min-height: 35em;
+    color: #48484c;
+    padding: 8px;
+    font-size: 16px;
 }
 #edit-file textarea, #edit-page textarea, #edit-page input[type=text] { padding: 5px 10px; border: 1px solid #eee; border-radius: 3px; }
 .right {
