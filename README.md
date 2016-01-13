@@ -67,9 +67,11 @@ sqlite>
 ```sh
 $ ./gowiki -h
 Usage of ./gowiki:
+  -db="./wiki.db": path for wiki db
   -debug=false: run with debug mode
   -del-static=false: delete db-cached static files
   -load-static=false: reload db-cached static files
+  -port="2222": port to run on
 ```
 
 If no options are chosen, static files are loaded as necessary and the wiki is run in deploy mode.

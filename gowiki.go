@@ -89,12 +89,16 @@ func environ(key, fallback string) string {
 }
 
 var opts struct {
+	db         string
+	port       string
 	debug      bool
 	delstatic  bool
 	loadstatic bool
 }
 
 func main() {
+	flag.StringVar(&opts.port, "port", environ("GOWIKI_PORT", "2222"), "port to run on")
+	flag.StringVar(&opts.db, "db", environ("GOWIKI_PATH", "./wiki.db"), "path for wiki db")
 	flag.BoolVar(&opts.debug, "debug", len(os.Getenv("GOWIKI_DEVELOP")) > 0, "run with debug mode")
 	flag.BoolVar(&opts.delstatic, "del-static", false, "delete db-cached static files")
 	flag.BoolVar(&opts.loadstatic, "load-static", false, "reload db-cached static files")
@@ -104,6 +108,8 @@ func main() {
 		fmt.Printf("Error: cannot specify -debug and -del-static")
 		return
 	}
+
+	initdb(opts.db)
 
 	if opts.delstatic {
 		var files []File
@@ -178,9 +184,8 @@ func main() {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		handler.ServeHTTP(w, req)
 	}))
-	port := environ("GOWIKI_PORT", "2222")
-	fmt.Println("Listening on :" + port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	fmt.Println("Listening on :" + opts.port)
+	log.Fatal(http.ListenAndServe(":"+opts.port, nil))
 }
 
 func abort(w http.ResponseWriter, status int, body []byte) {
@@ -714,9 +719,9 @@ func loadTemplatesFromBundle() {
 	t = templates.MustGet
 }
 
-func init() {
+func initdb(path string) {
 	var err error
-	path := environ("GOWIKI_PATH", "./wiki.db")
+
 	db, err = sqlx.Connect("sqlite3", path)
 	if err != nil {
 		log.Fatal("Error: ", err)
@@ -732,9 +737,7 @@ func init() {
 	if err != nil {
 		log.Fatal("Database not creatable: ", err)
 	}
-
 	// load bundled data
 	loadBundle()
 	cfg = LoadConfig()
-
 }
